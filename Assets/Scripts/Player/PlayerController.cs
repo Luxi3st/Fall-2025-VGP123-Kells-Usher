@@ -1,0 +1,111 @@
+using UnityEngine;
+
+//This will be attached to the player gameobject to control its movement
+[RequireComponent(typeof(Rigidbody2D), typeof(Collider2D), typeof(SpriteRenderer))]
+[RequireComponent(typeof(Animator))]
+public class PlayerController : MonoBehaviour
+{
+    //control variables
+    //a speed value that will control how fast the player moves horizontally
+    public float speed = 10f;
+    public float groundCheckRadius = 0.02f;
+    private bool isGrounded = false;
+
+    //Component references
+    //public Transform groundCheck;
+    Rigidbody2D rb;
+    Collider2D col;
+    SpriteRenderer sr;
+    Animator anim;
+    GroundCheck groundCheck;
+
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        //get the Rigidbody2D component attached to the same gameobject - we assume that it exists
+        rb = GetComponent<Rigidbody2D>();
+        col = GetComponent<Collider2D>();
+        sr = GetComponent<SpriteRenderer>();
+        anim = GetComponent<Animator>();
+
+        groundCheck = new GroundCheck(col, LayerMask.GetMask("Ground"), groundCheckRadius);
+
+        //Transform based ground check setup - using an empty gameobject as a child of the player to define the ground check position
+        //initalize ground check poositon using separate gameobject as a child of the player
+        //GameObject newObj = new GameObject("GroundCheck");
+        //newObj.transform.SetParent(transform);
+        //newObj.transform.localPosition = Vector3.zero;
+        //groundCheck = newObj.transform;
+        //this is basically the same as doing it in the editor, but we do it here to keep everything self-contained
+
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        isGrounded = groundCheck.CheckIsGrounded();
+
+        //grab our horizontal input value - negative button is moving to the left (A/Left Arrow), positive button is moving to the right (D/Right Arrow) - cross platform compatible so it works with keyboard, joystick, etc. -1 to 1 range where zero means no input
+        float hValue = Input.GetAxis("Horizontal");
+        float vValue = Input.GetAxisRaw("Vertical");
+        SpriteFlip(hValue);
+
+        //set the rigidbody's horizontal velocity based on the input value multiplied by our speed - vertical velocity remains unchanged
+        rb.linearVelocityX = hValue * speed;
+
+        if (Input.GetButtonDown("Jump") && isGrounded)
+        {
+            //apply an upward force to the rigidbody when the jump button is pressed
+            rb.AddForce(Vector2.up * 10f, ForceMode2D.Impulse);
+        }
+
+        if (Input.GetButtonDown("Fire1") && isGrounded && hValue == 0)
+        {
+            anim.SetTrigger("Fire");
+        }
+
+        //update animator parameters
+        anim.SetFloat("hValue", Mathf.Abs(hValue));
+        anim.SetBool("isGrounded", isGrounded);
+    }
+
+    private void OnValidate() => groundCheck?.UpdateGroundCheckRadius(groundCheckRadius);
+
+    private void SpriteFlip(float hValue)
+    {
+        //we can use the (hValue < 0) expression to set flipX directly - hValue is negative when moving left, so flipX should be true
+        if (hValue != 0)
+            sr.flipX = (hValue < 0);
+
+        //flip the sprite based on the direction we are moving - flipX is true when the sprite is facing left
+        //if (sr.flipX && hValue > 0 || !sr.flipX && hValue < 0)
+        //{
+        //    sr.flipX = !sr.flipX;
+        //}
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+
+    }
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+
+    }
+    private void OnCollisionExit2D(Collision2D collision)
+    {
+
+    }
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+
+    }
+    private void OnTriggerStay2D(Collider2D collision)
+    {
+
+    }
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+
+    }
+}
